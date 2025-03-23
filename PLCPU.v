@@ -1,4 +1,13 @@
 `include "ctrl_encode_def.v"
+`include "ctrl.v"
+`include "alu.v"
+`include "EXT.v"
+`include "pl_reg.v"
+`include "PC.v"
+`include "NPC.v"
+`include "RF.v"
+`include "HDU.v"
+
 module PLCPU(
     input      clk,            // clock
     input      reset,          // reset
@@ -106,6 +115,30 @@ module PLCPU(
     wire ID_MemRead; // MemRead from ctrl in ID
 
    // instantiation of control unit
+    wire Stall;
+    wire [1:0] BusAFw;
+    wire [1:0] BusBFw;
+    wire DiSrc;
+    HDU U_HDU(
+        .ID_rs1(rs1),
+        .ID_rs2(rs2),
+        .EX_rs1(EX_rs1),
+        .EX_rs2(EX_rs2),
+        .EX_rd(EX_rd),
+        .MEM_rs2(MEM_rs2),
+        .MEM_rd(MEM_rd),
+        .WB_rd(WB_rd),
+        .EX_MemRead(EX_MemRead),
+        .EX_MemWrite(EX_MemWrite),
+        .MEM_MemWrite(MEM_MemWrite),
+        .MEM_RegWrite(MEM_RegWrite),
+        .WB_RegWrite(WB_RegWrite),
+        .Stall(Stall),
+        .BusAFw(BusAFw),
+        .BusBFw(BusBFw),
+        .DiSrc(DiSrc) 
+    );
+
 	ctrl U_ctrl(
 	    .Op(Op), .Funct7(Funct7), .Funct3(Funct3), .Zero(Zero), 
 		.RegWrite(RegWrite), .MemWrite(ID_MemWrite), .MemRead(ID_MemRead),
@@ -133,14 +166,14 @@ module PLCPU(
 //please connnect the CPU by yourself
 
 //WD MUX
-always @(*)
-begin
-	case(WB_WDSel)
-		`WDSel_FromALU: WD<=WB_aluout;
-		`WDSel_FromMEM: WD<=WB_MemData;
-		`WDSel_FromPC:  WD<=WB_pc+4;  //WB_pc��ǰ�漸����δ��4����Jָ��ԭʼ��ַ
-	endcase
-end
+    always @(*)
+    begin
+        case(WB_WDSel)
+            `WDSel_FromALU: WD<=WB_aluout;
+            `WDSel_FromMEM: WD<=WB_MemData;
+            `WDSel_FromPC:  WD<=WB_pc+4;  //WB_pc��ǰ�漸����δ��4����Jָ��ԭʼ��ַ
+        endcase
+    end
 
 // MUX Gate 
     reg [31:0] alu_in1;  

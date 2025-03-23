@@ -9,6 +9,7 @@ main:	lui x5, 0x12345              #x5 <== 0x12345
 		addi	x0, x0, 0            #nop
 		addi	x0, x0, 0
         add	x7, x5, x6               #x7 <== 0x12344000
+        
         sub	x8, x5, x6               #x8 <== 0x12346000
 
         xor	x9, x5, x6               #x9 <== 0xEDCBA000
@@ -26,6 +27,7 @@ main:	lui x5, 0x12345              #x5 <== 0x12345
 		addi	x0, x0, 0            #nop
 		addi	x0, x0, 0        
 		addi	x0, x0, 0
-        add     x18, x16, x17        #x18 <== 0x12344000
+        add     x18, x16, x17        #x18 <== 0x12344000, 0xFFFFF000+0x12345000 
+        add     x19, x18, x18        #x19 <== 0x24588000
         slt     x21, x7, x5          #x21 <== 0x1,  0x12344 < 0x12345
         sltu    x22, x5, x6          #x21 <== 0x1,  0x12345 < 0xffff0

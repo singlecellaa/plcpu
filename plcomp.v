@@ -1,4 +1,8 @@
 `include "ctrl_encode_def.v"
+`include "PLCPU.v"
+`include "dm.v"
+`include "im.v"
+
 module plcomp(clk, rstn);
   input             clk, rstn;
    

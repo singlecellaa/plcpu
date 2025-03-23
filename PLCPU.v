@@ -43,8 +43,6 @@ module PLCPU(
     reg [31:0] WD;           // register write data
     reg [31:0] memdata_wr;    // memory write data
     wire [31:0] RD1,RD2;         // register data specified by rs
-    wire [31:0] A;            //operator for ALU A
-    wire [31:0] B;           // operator for ALU B
 
 	wire [4:0] iimm_shamt;
 	wire [11:0] iimm,simm,bimm;
@@ -115,6 +113,61 @@ module PLCPU(
     wire ID_MemRead; // MemRead from ctrl in ID
 
    // instantiation of control unit
+
+	ctrl U_ctrl(
+	    .Op(Op), .Funct7(Funct7), .Funct3(Funct3), .Zero(Zero), 
+		.RegWrite(RegWrite), .MemWrite(ID_MemWrite), .MemRead(ID_MemRead),
+		.EXTOp(EXTOp), .ALUOp(ALUOp), .NPCOp(NPCOp), 
+		.ALUSrc(ALUSrc), .WDSel(WDSel)
+	);
+ // instantiation of pc unit
+	PC U_PC(.clk(~clk), .rst(reset), .NPC(NPC), .PC(PC_out) );
+	NPC U_NPC(.PC(PC_out), .NPCOp(EX_NPCOp),
+	          .IMM(EX_immout), .NPC(NPC));
+	EXT U_EXT(
+		.iimm(iimm), .simm(simm), 
+		.uimm(uimm), .EXTOp(EXTOp), .immout(immout)
+	);
+	RF U_RF(
+		.clk(clk), .rst(reset),
+		.RFWr(WB_RegWrite), 
+		.A1(rs1), .A2(rs2), .A3(WB_rd), 
+		.WD(WD), 
+		.RD1(RD1), .RD2(RD2)
+	);
+// instantiation of alu unit
+	
+//please connnect the CPU by yourself
+
+//WD MUX
+    always @(*)
+    begin
+        case(WB_WDSel)
+            `WDSel_FromALU: WD<=WB_aluout;
+            `WDSel_FromMEM: WD<=WB_MemData;
+            `WDSel_FromPC:  WD<=WB_pc+4;  //WB_pc��ǰ�漸����δ��4����Jָ��ԭʼ��ַ
+        endcase
+    end
+
+// MUX Gate 
+    
+    always @(*) 
+        memdata_wr <= MEM_RD2;//from MEM
+//-----pipe registers--------------
+
+//IF_ID: [31:0] PC [31:0]instr
+    wire [63:0] IF_ID_in;
+    assign IF_ID_in[31:0] = PC_out;//original addr of the current ins in ID, not PC+4
+    assign IF_ID_in[63:32] = inst_in;
+
+    wire [63:0] IF_ID_out;
+    assign instr = IF_ID_out[63:32];
+    pl_reg #(.WIDTH(64))
+    IF_ID
+    (.clk(~clk), .rst(reset), 
+    .in(IF_ID_in), .out(IF_ID_out));
+
+    //ID
     wire Stall;
     wire [1:0] BusAFw;
     wire [1:0] BusBFw;
@@ -139,74 +192,7 @@ module PLCPU(
         .DiSrc(DiSrc) 
     );
 
-	ctrl U_ctrl(
-	    .Op(Op), .Funct7(Funct7), .Funct3(Funct3), .Zero(Zero), 
-		.RegWrite(RegWrite), .MemWrite(ID_MemWrite), .MemRead(ID_MemRead),
-		.EXTOp(EXTOp), .ALUOp(ALUOp), .NPCOp(NPCOp), 
-		.ALUSrc(ALUSrc), .WDSel(WDSel)
-	);
- // instantiation of pc unit
-	PC U_PC(.clk(~clk), .rst(reset), .NPC(NPC), .PC(PC_out) );
-	NPC U_NPC(.PC(PC_out), .NPCOp(EX_NPCOp),
-	          .IMM(EX_immout), .NPC(NPC));
-	EXT U_EXT(
-		.iimm(iimm), .simm(simm), 
-		.uimm(uimm), .EXTOp(EXTOp), .immout(immout)
-	);
-	RF U_RF(
-		.clk(clk), .rst(reset),
-		.RFWr(WB_RegWrite), 
-		.A1(rs1), .A2(rs2), .A3(WB_rd), 
-		.WD(WD), 
-		.RD1(RD1), .RD2(RD2)
-	);
-// instantiation of alu unit
-	alu U_alu(.A(A), .B(B), .ALUOp(EX_ALUOp), .C(aluout), .Zero(Zero));
-	
-//please connnect the CPU by yourself
-
-//WD MUX
-    always @(*)
-    begin
-        case(WB_WDSel)
-            `WDSel_FromALU: WD<=WB_aluout;
-            `WDSel_FromMEM: WD<=WB_MemData;
-            `WDSel_FromPC:  WD<=WB_pc+4;  //WB_pc��ǰ�漸����δ��4����Jָ��ԭʼ��ַ
-        endcase
-    end
-
-// MUX Gate 
-    reg [31:0] alu_in1;  
-    reg [31:0] alu_in2;  
-
-    always @(*) 
-    begin
-        alu_in1 <= EX_RD1; //from regfile
-        alu_in2 <= EX_RD2; //from regfile
-    end
-    
-    always @(*) 
-        memdata_wr <= MEM_RD2;//from MEM
-        
-    assign A = alu_in1;
-    assign B = (EX_ALUSrc) ? EX_immout : alu_in2;//whether from EXT
-
-//-----pipe registers--------------
-
-    //IF_ID: [31:0] PC [31:0]instr
-    wire [63:0] IF_ID_in;
-    assign IF_ID_in[31:0] = PC_out;//original addr of the current ins in ID, not PC+4
-    assign IF_ID_in[63:32] = inst_in;
-
-    wire [63:0] IF_ID_out;
-    assign instr = IF_ID_out[63:32];
-    pl_reg #(.WIDTH(64))
-    IF_ID
-    (.clk(~clk), .rst(reset), 
-    .in(IF_ID_in), .out(IF_ID_out));
-
-
-    //ID_EX
+//ID_EX
     wire [193:0] ID_EX_in;
     assign ID_EX_in[31:0] = IF_ID_out[31:0];//PC
     assign ID_EX_in[36:32] = rd;
@@ -249,8 +235,45 @@ module PLCPU(
     (.clk(~clk), .rst(reset), 
     .in(ID_EX_in), .out(ID_EX_out));
 
-    
-    //EX_MEM
+    //EX
+    reg [31:0] alu_in1;  
+    reg [31:0] alu_in2;  
+    always @(*) 
+    begin
+        alu_in1 <= EX_RD1; //from regfile
+        alu_in2 <= EX_RD2; //from regfile
+    end
+    wire [31:0] A;            //operator for ALU A
+    wire [31:0] B;           // operator for ALU B
+    assign A = alu_in1;
+    assign B = (EX_ALUSrc) ? EX_immout : alu_in2;//whether from EXT
+    reg [31:0] alu_in1_fw;
+    reg [31:0] alu_in2_fw;
+    always @(*)
+    begin
+        case(BusAFw)
+            2'b00: alu_in1_fw <= A;
+            2'b01: alu_in1_fw <= WB_aluout;
+            2'b10: alu_in1_fw <= MEM_aluout;
+            2'b11: alu_in1_fw <= MEM_aluout;
+        endcase
+    end
+    always @(*)
+    begin
+        case(BusBFw)
+            2'b00: alu_in2_fw <= B;
+            2'b01: alu_in2_fw <= WB_aluout;
+            2'b10: alu_in2_fw <= MEM_aluout;
+            2'b11: alu_in2_fw <= MEM_aluout;
+        endcase
+    end
+    wire [31:0] A_FW;
+    wire [31:0] B_FW;
+    assign A_FW = alu_in1_fw;
+    assign B_FW = alu_in2_fw;
+    alu U_alu(.A(A_FW), .B(B_FW), .ALUOp(EX_ALUOp), .C(aluout), .Zero(Zero));
+
+//EX_MEM
     wire [145:0] EX_MEM_in;
     assign EX_MEM_in[31:0] = ID_EX_out[31:0];//PC
     assign EX_MEM_in[36:32] = EX_rd;//rd
@@ -282,7 +305,7 @@ module PLCPU(
     .in(EX_MEM_in), .out(EX_MEM_out));
     
 
-    //MEM_WB
+//MEM_WB
     wire [135:0] MEM_WB_in;
     wire [31:0] WB_inst;
     assign MEM_WB_in[31:0] = EX_MEM_out[31:0]; //PC

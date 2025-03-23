@@ -21,8 +21,8 @@ module HDU (
 
     assign BusAFw[1] = MEM_RegWrite && (MEM_rd != 0) && (MEM_rd == EX_rs1); 
     assign BusBFw[1] = MEM_RegWrite && (MEM_rd != 0) && (MEM_rd == EX_rs2); 
-    assign BusAFw[0] = WB_RegWrite && (MEM_rd != 0) && (MEM_rd != EX_rs1) && (MEM_rd == EX_rs1); 
-    assign BusBFw[0] = WB_RegWrite && (MEM_rd != 0) && (MEM_rd != EX_rs2) && (MEM_rd == EX_rs2); 
+    assign BusAFw[0] = WB_RegWrite && (MEM_rd != 0) && (MEM_rd != EX_rs1) && (WB_rd == EX_rs1); 
+    assign BusBFw[0] = WB_RegWrite && (MEM_rd != 0) && (MEM_rd != EX_rs2) && (WB_rd == EX_rs2); 
     assign DiSrc     = WB_RegWrite && (WB_rd != 0) && (WB_rd == MEM_rs2) && MEM_MemWrite; 
     assign Stall     = EX_MemRead   && ((EX_rd == ID_rs1) || (EX_rd == ID_rs2));
 

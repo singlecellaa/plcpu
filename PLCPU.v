@@ -49,6 +49,8 @@ module PLCPU(
 	wire [19:0] uimm,jimm;
 	wire [31:0] immout;
 	
+    wire Stall;
+    
 	//EX wires
 	wire [4:0] EX_rd;
     wire [4:0] EX_rs1;
@@ -121,7 +123,7 @@ module PLCPU(
 		.ALUSrc(ALUSrc), .WDSel(WDSel)
 	);
  // instantiation of pc unit
-	PC U_PC(.clk(~clk), .rst(reset), .NPC(NPC), .PC(PC_out) );
+	PC U_PC(.clk(~clk & !Stall), .rst(reset), .NPC(NPC), .PC(PC_out) );
 	NPC U_NPC(.PC(PC_out), .NPCOp(EX_NPCOp),
 	          .IMM(EX_immout), .NPC(NPC));
 	EXT U_EXT(
@@ -162,11 +164,10 @@ module PLCPU(
     assign instr = IF_ID_out[63:32];
     pl_reg #(.WIDTH(64))
     IF_ID
-    (.clk(~clk), .rst(reset), 
+    (.clk(~clk), .rst(reset), .Wr(!Stall),
     .in(IF_ID_in), .out(IF_ID_out));
 
     //ID
-    wire Stall;
     wire [1:0] BusAFw;
     wire [1:0] BusBFw;
     wire DiSrc;
@@ -228,10 +229,11 @@ module PLCPU(
     assign EX_pc = ID_EX_out[31:0];
     //assign EX_inst = ID_EX_out[193:162];
     
+    wire [193:0] ID_EX_in_modified = Stall ? 194'b0 : ID_EX_in;
     pl_reg #(.WIDTH(194))
     ID_EX
-    (.clk(~clk), .rst(reset), 
-    .in(ID_EX_in), .out(ID_EX_out));
+    (.clk(~clk), .rst(reset), .Wr(1'b1),
+    .in(ID_EX_in_modified), .out(ID_EX_out));
 
     //EX
     reg [31:0] alu_in1;  
@@ -240,13 +242,13 @@ module PLCPU(
     begin
         case(BusAFw)
             2'b00: alu_in1 <= EX_RD1;
-            2'b01: alu_in1 <= WB_aluout;
+            2'b01: alu_in1 <= WD;
             2'b10: alu_in1 <= MEM_aluout;
             2'b11: alu_in1 <= MEM_aluout;
         endcase
         case(BusBFw)
             2'b00: alu_in2 <= EX_RD2;
-            2'b01: alu_in2 <= WB_aluout;
+            2'b01: alu_in2 <= WD;
             2'b10: alu_in2 <= MEM_aluout;
             2'b11: alu_in2 <= MEM_aluout;
         endcase
@@ -285,7 +287,7 @@ module PLCPU(
  
     pl_reg #(.WIDTH(146))
     EX_MEM
-    (.clk(~clk), .rst(reset), 
+    (.clk(~clk), .rst(reset), .Wr(1'b1),
     .in(EX_MEM_in), .out(EX_MEM_out));
     
     // MEM
@@ -320,7 +322,7 @@ module PLCPU(
 
     pl_reg #(.WIDTH(136))
     MEM_WB
-    (.clk(~clk), .rst(reset), 
+    (.clk(~clk), .rst(reset), .Wr(1'b1),
     .in(MEM_WB_in), .out(MEM_WB_out));
 
 endmodule

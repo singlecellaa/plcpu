@@ -1,6 +1,7 @@
 module pl_reg #(parameter WIDTH = 32)(
     input clk, rst, 
     input [WIDTH-1:0] in,
+    input Wr,
     output reg [WIDTH-1:0] out
     );
     
@@ -9,7 +10,10 @@ module pl_reg #(parameter WIDTH = 32)(
           if(rst)
               out <= 0;
           else 
-              out <= in;
+            if(Wr)
+                begin
+                    out <= in;
+                end
       end
     
 endmodule

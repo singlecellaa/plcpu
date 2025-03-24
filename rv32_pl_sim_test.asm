@@ -20,16 +20,17 @@ main:	lui x5, 0x12345              #x5 <== 0x12345
         sra	x14, x6, x12	         #x14 <== 0xFFFFFF00
         sll	x15, x5, x12	         #x15 <== 0x23450000
 
-        addi    x10, x10, 0x123
-        sw x10, 0(x12)               #mem[4] <== 0xFFFFF123, 0xFFFFF000 + 0x123
+        addi    x10, x10, 0x123      #x10 <== 0xFFFFF123
+        sw x10, 0(x12)               #mem[4] <== 0xFFFFF123
         sw x11, 4(x12)               #mem[8] <== 0x12345000
-        lw x16, 0(x12)               #x16 <== 0xFFFFF000
+        lw x16, 0(x12)               #x16 <== 0xFFFFF123
         lw x17, 4(x12)               #x17 <== 0x12345000
+        addi x17, x17, 0x123         #x17 <== 0x12345123
 		addi	x0, x0, 0            #nop
 		addi	x0, x0, 0        
 		addi	x0, x0, 0
-        add     x18, x16, x17        #x18 <== 0x12344000, 0xFFFFF000+0x12345000 
-        add     x19, x18, x18        #x19 <== 0x24588000
-        add     x20, x18, x18        #x20 <== 0x24588000
+        add     x18, x16, x17        #x18 <== 0x12344246, 0xFFFFF123+0x12345123
+        add     x19, x18, x18        #x19 <== 0x2458848c
+        add     x20, x18, x18        #x20 <== 0x2458848c
         slt     x21, x7, x5          #x21 <== 0x1,  0x12344 < 0x12345
         sltu    x22, x5, x6          #x21 <== 0x1,  0x12345 < 0xffff0

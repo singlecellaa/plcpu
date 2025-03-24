@@ -20,7 +20,8 @@ main:	lui x5, 0x12345              #x5 <== 0x12345
         sra	x14, x6, x12	         #x14 <== 0xFFFFFF00
         sll	x15, x5, x12	         #x15 <== 0x23450000
 
-        sw x10, 0(x12)               #mem[4] <== 0xFFFFF000
+        addi    x10, x10, 0x123
+        sw x10, 0(x12)               #mem[4] <== 0xFFFFF123, 0xFFFFF000 + 0x123
         sw x11, 4(x12)               #mem[8] <== 0x12345000
         lw x16, 0(x12)               #x16 <== 0xFFFFF000
         lw x17, 4(x12)               #x17 <== 0x12345000

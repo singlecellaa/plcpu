@@ -151,8 +151,6 @@ module PLCPU(
 
 // MUX Gate 
     
-    always @(*) 
-        memdata_wr <= MEM_RD2;//from MEM
 //-----pipe registers--------------
 
 //IF_ID: [31:0] PC [31:0]instr
@@ -238,40 +236,26 @@ module PLCPU(
     //EX
     reg [31:0] alu_in1;  
     reg [31:0] alu_in2;  
-    always @(*) 
+    always @(*)
     begin
-        alu_in1 <= EX_RD1; //from regfile
-        alu_in2 <= EX_RD2; //from regfile
+        case(BusAFw)
+            2'b00: alu_in1 <= EX_RD1;
+            2'b01: alu_in1 <= WB_aluout;
+            2'b10: alu_in1 <= MEM_aluout;
+            2'b11: alu_in1 <= MEM_aluout;
+        endcase
+        case(BusBFw)
+            2'b00: alu_in2 <= EX_RD2;
+            2'b01: alu_in2 <= WB_aluout;
+            2'b10: alu_in2 <= MEM_aluout;
+            2'b11: alu_in2 <= MEM_aluout;
+        endcase
     end
     wire [31:0] A;            //operator for ALU A
     wire [31:0] B;           // operator for ALU B
     assign A = alu_in1;
     assign B = (EX_ALUSrc) ? EX_immout : alu_in2;//whether from EXT
-    reg [31:0] alu_in1_fw;
-    reg [31:0] alu_in2_fw;
-    always @(*)
-    begin
-        case(BusAFw)
-            2'b00: alu_in1_fw <= A;
-            2'b01: alu_in1_fw <= WB_aluout;
-            2'b10: alu_in1_fw <= MEM_aluout;
-            2'b11: alu_in1_fw <= MEM_aluout;
-        endcase
-    end
-    always @(*)
-    begin
-        case(BusBFw)
-            2'b00: alu_in2_fw <= B;
-            2'b01: alu_in2_fw <= WB_aluout;
-            2'b10: alu_in2_fw <= MEM_aluout;
-            2'b11: alu_in2_fw <= MEM_aluout;
-        endcase
-    end
-    wire [31:0] A_FW;
-    wire [31:0] B_FW;
-    assign A_FW = alu_in1_fw;
-    assign B_FW = alu_in2_fw;
-    alu U_alu(.A(A_FW), .B(B_FW), .ALUOp(EX_ALUOp), .C(aluout), .Zero(Zero));
+    alu U_alu(.A(A), .B(B), .ALUOp(EX_ALUOp), .C(aluout), .Zero(Zero));
 
 //EX_MEM
     wire [145:0] EX_MEM_in;
@@ -304,6 +288,15 @@ module PLCPU(
     (.clk(~clk), .rst(reset), 
     .in(EX_MEM_in), .out(EX_MEM_out));
     
+    // MEM
+    always @(*) 
+    begin
+        case(DiSrc)
+            1'b0: memdata_wr <= MEM_RD2;//from MEM
+            1'b1: memdata_wr <= WB_aluout;
+        endcase
+    end
+        
 
 //MEM_WB
     wire [135:0] MEM_WB_in;

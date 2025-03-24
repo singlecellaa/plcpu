@@ -34,3 +34,15 @@ main:	lui x5, 0x12345              #x5 <== 0x12345
         add     x20, x18, x18        #x20 <== 0x2458848c
         slt     x21, x7, x5          #x21 <== 0x1,  0x12344 < 0x12345
         sltu    x22, x5, x6          #x21 <== 0x1,  0x12345 < 0xffff0
+        andi    x22, x22,0x0         #x22 <== 0x0,  0x1 & 0x0
+        ori     x22, x22,0x3         #x22 <== 0x3,  0x3 | 0x0
+        xori    x22, x22,0x1         #x22 <== 0x2,  0x3 ^ 0x1
+        srli    x23, x6, 0x4         #x23 <== 0x0FFFFF00
+        srai    x24, x6, 0x4         #x24 <== 0xFFFFFF00
+        slli    x25, x5, 0x4         #x25 <== 0x23450000
+        slti    x26, x6,0x7FF        #x26 <== 0x1, 0x2 < 0x123
+        sltiu   x26, x6,0x7FF        #x26 <== 0x0, 0x2 < 0x7FF  
+label1: lui x5, 0x1
+        lui x6, 0x1
+        lui x6, 0x2
+        beq x19,x20,label1

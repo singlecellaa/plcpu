@@ -45,4 +45,9 @@ main:	lui x5, 0x12345              #x5 <== 0x12345
 label1: lui x5, 0x1
         lui x6, 0x1
         lui x6, 0x2
+        jal x0, label2
+        addi x0, x0, 0x0
+        addi x0, x0, 0x0
         beq x19,x20,label1
+label2: lui x5, 0x2
+        jal x0, label1

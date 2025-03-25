@@ -66,6 +66,7 @@ module PLCPU(
     wire       EX_ALUSrc;
     wire [1:0] EX_WDSel;
     wire [31:0] EX_pc;
+    wire        flush;
 	
 	//MEM wires
 	wire [4:0] MEM_rd;
@@ -124,11 +125,11 @@ module PLCPU(
 	);
  // instantiation of pc unit
 	PC U_PC(.clk(~clk & !Stall), .rst(reset), .NPC(NPC), .PC(PC_out) );
-	NPC U_NPC(.PC(EX_pc), .ALUOut(aluout), .NPCOp(EX_NPCOp),
+	NPC U_NPC(.PC(PC_out), .EX_PC(EX_pc), .ALUOut(aluout), .NPCOp(EX_NPCOp),
 	          .IMM(EX_immout), .NPC(NPC));
 	EXT U_EXT(
 		.iimm(iimm), .simm(simm), .bimm(bimm),
-		.uimm(uimm), .EXTOp(EXTOp), .immout(immout)
+		.uimm(uimm), .jimm(jimm), .EXTOp(EXTOp), .immout(immout)
 	);
 	RF U_RF(
 		.clk(clk), .rst(reset),
@@ -162,10 +163,12 @@ module PLCPU(
 
     wire [63:0] IF_ID_out;
     assign instr = IF_ID_out[63:32];
+    wire [63:0] IF_ID_in_modified;
+    assign IF_ID_in_modified = flush ? 64'b0 : IF_ID_in; 
     pl_reg #(.WIDTH(64))
     IF_ID
     (.clk(~clk), .rst(reset), .Wr(!Stall),
-    .in(IF_ID_in), .out(IF_ID_out));
+    .in(IF_ID_in_modified), .out(IF_ID_out));
 
     //ID
     wire [1:0] BusAFw;
@@ -227,9 +230,10 @@ module PLCPU(
     assign EX_WDSel = ID_EX_out[160:159];
     assign EX_MemRead = ID_EX_out[161];
     assign EX_pc = ID_EX_out[31:0];
+    assign flush = (EX_NPCOp != 0);
     //assign EX_inst = ID_EX_out[193:162];
     
-    wire [193:0] ID_EX_in_modified = Stall ? 194'b0 : ID_EX_in;
+    wire [193:0] ID_EX_in_modified = (Stall || flush) ? 194'b0 : ID_EX_in;
     pl_reg #(.WIDTH(194))
     ID_EX
     (.clk(~clk), .rst(reset), .Wr(1'b1),

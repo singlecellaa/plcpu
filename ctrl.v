@@ -72,7 +72,7 @@ module ctrl(Op, Funct7, Funct3, Zero,
     wire i_jal  = Op[6]& Op[5]&~Op[4]& Op[3]& Op[2]& Op[1]& Op[0];  // jal 1101111
 
   // generate control signals
-  assign RegWrite   = rtype | itype_r | LUI | itype_l; // register write
+  assign RegWrite   = rtype | itype_r | LUI | itype_l | i_jal | i_jalr; // register write
   assign MemWrite   = stype;                // memory write
   assign MemRead    = itype_l;              // memory read
   assign ALUSrc     = itype_r | stype | LUI | itype_l;   // ALU B is from instruction immediate

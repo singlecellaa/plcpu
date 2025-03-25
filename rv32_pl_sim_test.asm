@@ -42,12 +42,28 @@ main:	lui x5, 0x12345              #x5 <== 0x12345
         slli    x25, x5, 0x4         #x25 <== 0x23450000
         slti    x26, x6,0x7FF        #x26 <== 0x1, 0x2 < 0x123
         sltiu   x26, x6,0x7FF        #x26 <== 0x0, 0x2 < 0x7FF  
-label1: lui x5, 0x1
-        lui x6, 0x1
-        lui x6, 0x2
+label1: lui     x5, 0x1              #x5 <== 0x1
+        beq x19, x20, label2         #taken
+	jal x0, label1
+label2: lui     x5, 0x2
+        bne     x25, x26, label3     #0x2345 != 0x0
         jal x0, label2
-        addi x0, x0, 0x0
-        addi x0, x0, 0x0
-        beq x19,x20,label1
-label2: lui x5, 0x2
+label3: lui     x5, 0x3
+        bge     x23,x24, label4
+        jal x0, label3
+label4: lui     x5, 0x4
+        bgeu    x24,x23, label5
+        jal x0, label4
+label5: lui     x5, 0x5
+        blt     x24,x23, label6
+        jal x0, label5
+label6: lui     x5, 0x6
+        bltu    x23,x24, label7
+        jal x0, label6
+label7: lui     x5, 0x7
+        jal x26,label8 
+        jal x0, label7            
+        addi    x0, x0, 0
+label8: lui     x5, 0x8
+        jalr x0, x26, 0
         jal x0, label1
